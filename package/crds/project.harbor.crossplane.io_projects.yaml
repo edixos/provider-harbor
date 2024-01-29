@@ -4,18 +4,18 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.1
-  name: mytypes.sample.harbor.crossplane.io
+  name: projects.project.harbor.crossplane.io
 spec:
-  group: sample.harbor.crossplane.io
+  group: project.harbor.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - harbor
-    kind: MyType
-    listKind: MyTypeList
-    plural: mytypes
-    singular: mytype
+    kind: Project
+    listKind: ProjectList
+    plural: projects
+    singular: project
   scope: Cluster
   versions:
   - additionalPrinterColumns:
@@ -34,7 +34,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A MyType is an example API type.
+        description: A Project is an example API type.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -49,7 +49,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: A MyTypeSpec defines the desired state of a MyType.
+            description: A ProjectSpec defines the desired state of a Project.
             properties:
               deletionPolicy:
                 default: Delete
@@ -65,7 +65,7 @@ spec:
                 - Delete
                 type: string
               forProvider:
-                description: MyTypeParameters are the configurable fields of a MyType.
+                description: ProjectParameters are the configurable fields of a Project.
                 properties:
                   configurableField:
                     type: string
@@ -270,17 +270,13 @@ spec:
             - forProvider
             type: object
           status:
-            description: A MyTypeStatus represents the observed state of a MyType.
+            description: A ProjectStatus represents the observed state of a Project.
             properties:
               atProvider:
-                description: MyTypeObservation are the observable fields of a MyType.
+                description: ProjectObservation are the observable fields of a Project.
                 properties:
-                  configurableField:
-                    type: string
                   observableField:
                     type: string
-                required:
-                - configurableField
                 type: object
               conditions:
                 description: Conditions of the resource.
