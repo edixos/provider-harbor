@@ -27,39 +27,22 @@ import (
 
 // ProjectParameters are the configurable fields of a Project.
 type ProjectParameters struct {
-	CreationTime metav1.Time `json:"creation_time,omitempty"`
-	// The role ID with highest permission of the current user who triggered the API (for UI).  This attribute is deprecated and will be removed in future versions.
-	CurrentUserRoleID int64 `json:"current_user_role_id,omitempty"`
-	// The list of role ID of the current user who triggered the API (for UI)
-	CurrentUserRoleIds []int32 `json:"current_user_role_ids"`
-	// The CVE allowlist of this project.
-	CVEAllowlist *models.CVEAllowlist `json:"cve_allowlist,omitempty"`
-	// A deletion mark of the project.
-	Deleted bool `json:"deleted,omitempty"`
-	// The metadata of the project.
-	Metadata *models.ProjectMetadata `json:"metadata,omitempty"`
-	// The name of the project.
-	Name string `json:"name,omitempty"`
-	// The owner ID of the project always means the creator of the project.
-	OwnerID int32 `json:"owner_id,omitempty"`
-	// The owner name of the project.
-	OwnerName string `json:"owner_name,omitempty"`
-	// Project ID
-	ProjectID int32 `json:"project_id,omitempty"`
-	// The ID of referenced registry when the project is a proxy cache project.
-	RegistryID int64 `json:"registry_id,omitempty"`
-	// The number of the repositories under this project.
-	RepoCount int64 `json:"repo_count"`
-	// Correspond to the UI about whether the project's publicity is  updatable (for UI)
-	Togglable bool `json:"togglable,omitempty"`
-	// The update time of the project.
-	// Format: date-time
-	UpdateTime metav1.Time `json:"update_time,omitempty"`
+	CurrentUserRoleID  int64                   `json:"currentUserRoleID,omitempty"`
+	CurrentUserRoleIds []int32                 `json:"currentUserRoleIds"`
+	CVEAllowlist       *models.CVEAllowlist    `json:"CVEAllowlist,omitempty"`
+	Deleted            *bool                   `json:"deleted,omitempty"`
+	Metadata           *models.ProjectMetadata `json:"metadata,omitempty"`
+	OwnerID            *int32                  `json:"ownerID,omitempty"`
+	OwnerName          *string                 `json:"ownerName,omitempty"`
+	ProjectID          *int32                  `json:"projectID,omitempty"`
+	RegistryID         *int64                  `json:"registryID,omitempty"`
+	RepoCount          int64                   `json:"repoCount"`
+	Togglable          *bool                   `json:"togglable,omitempty"`
 }
 
 // ProjectObservation are the observable fields of a Project.
 type ProjectObservation struct {
-	state string `json:"observableField,omitempty"`
+	State string `json:"state,omitempty"`
 }
 
 // A ProjectSpec defines the desired state of a Project.
