@@ -25,13 +25,13 @@ import (
 )
 
 type ProjectMetadata struct {
-	AutoScan                 *string `json:"auto_scan,omitempty"`
-	EnableContentTrust       *string `json:"enable_content_trust,omitempty"`
-	EnableContentTrustCosign *string `json:"enable_content_trust_cosign,omitempty"`
-	PreventVul               *string `json:"prevent_vul,omitempty"`
+	AutoScan                 *string `json:"autoScan,omitempty"`
+	EnableContentTrust       *string `json:"enableContentTrust,omitempty"`
+	EnableContentTrustCosign *string `json:"enableContentTrustCosign,omitempty"`
+	PreventVul               *string `json:"preventVul,omitempty"`
 	Public                   string  `json:"public,omitempty"`
-	RetentionID              *string `json:"retention_id,omitempty"`
-	ReuseSysCVEAllowlist     *string `json:"reuse_sys_cve_allowlist,omitempty"`
+	RetentionID              *string `json:"retentionID,omitempty"`
+	ReuseSysCVEAllowlist     *string `json:"reuseSysCVEAllowlist,omitempty"`
 	Severity                 *string `json:"severity,omitempty"`
 }
 
