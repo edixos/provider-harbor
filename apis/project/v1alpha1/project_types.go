@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/goharbor/go-client/pkg/sdk/v2.0/models"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"reflect"
@@ -25,18 +24,29 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
+type ProjectMetadata struct {
+	AutoScan                 *string `json:"auto_scan,omitempty"`
+	EnableContentTrust       *string `json:"enable_content_trust,omitempty"`
+	EnableContentTrustCosign *string `json:"enable_content_trust_cosign,omitempty"`
+	PreventVul               *string `json:"prevent_vul,omitempty"`
+	Public                   string  `json:"public,omitempty"`
+	RetentionID              *string `json:"retention_id,omitempty"`
+	ReuseSysCVEAllowlist     *string `json:"reuse_sys_cve_allowlist,omitempty"`
+	Severity                 *string `json:"severity,omitempty"`
+}
+
 // ProjectParameters are the configurable fields of a Project.
 type ProjectParameters struct {
-	CurrentUserRoleID  int64                   `json:"currentUserRoleID,omitempty"`
-	CurrentUserRoleIds []int32                 `json:"currentUserRoleIds"`
-	Deleted            *bool                   `json:"deleted,omitempty"`
-	Metadata           *models.ProjectMetadata `json:"metadata,omitempty"`
-	OwnerID            *int32                  `json:"ownerID,omitempty"`
-	OwnerName          *string                 `json:"ownerName,omitempty"`
-	ProjectID          *int32                  `json:"projectID,omitempty"`
-	RegistryID         *int64                  `json:"registryID,omitempty"`
-	RepoCount          int64                   `json:"repoCount"`
-	Togglable          *bool                   `json:"togglable,omitempty"`
+	CurrentUserRoleID  int64            `json:"currentUserRoleID,omitempty"`
+	CurrentUserRoleIds []int32          `json:"currentUserRoleIds"`
+	Deleted            *bool            `json:"deleted,omitempty"`
+	Metadata           *ProjectMetadata `json:"metadata,omitempty"`
+	OwnerID            *int32           `json:"ownerID,omitempty"`
+	OwnerName          *string          `json:"ownerName,omitempty"`
+	ProjectID          *int32           `json:"projectID,omitempty"`
+	RegistryID         *int64           `json:"registryID,omitempty"`
+	RepoCount          int64            `json:"repoCount"`
+	Togglable          *bool            `json:"togglable,omitempty"`
 }
 
 // ProjectObservation are the observable fields of a Project.
