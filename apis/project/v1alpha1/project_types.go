@@ -20,7 +20,6 @@ import (
 	"github.com/goharbor/go-client/pkg/sdk/v2.0/models"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"reflect"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -28,7 +27,7 @@ import (
 
 // ProjectParameters are the configurable fields of a Project.
 type ProjectParameters struct {
-	CreationTime strfmt.DateTime `json:"creation_time,omitempty"`
+	CreationTime metav1.Time `json:"creation_time,omitempty"`
 	// The role ID with highest permission of the current user who triggered the API (for UI).  This attribute is deprecated and will be removed in future versions.
 	CurrentUserRoleID int64 `json:"current_user_role_id,omitempty"`
 	// The list of role ID of the current user who triggered the API (for UI)
@@ -55,7 +54,7 @@ type ProjectParameters struct {
 	Togglable bool `json:"togglable,omitempty"`
 	// The update time of the project.
 	// Format: date-time
-	UpdateTime strfmt.DateTime `json:"update_time,omitempty"`
+	UpdateTime metav1.Time `json:"update_time,omitempty"`
 }
 
 // ProjectObservation are the observable fields of a Project.
