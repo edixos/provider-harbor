@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"net/url"
 	"reflect"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +29,7 @@ import (
 type ProviderConfigSpec struct {
 	// Credentials required to authenticate to this provider.
 	Credentials ProviderCredentials `json:"credentials"`
-	HarborUrl   url.URL             `json:"harborUrl"`
+	HarborUrl   string              `json:"harborUrl"`
 	Insecure    *bool               `json:"insecure"`
 }
 
