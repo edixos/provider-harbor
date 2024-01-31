@@ -29,7 +29,6 @@ import (
 type ProjectParameters struct {
 	CurrentUserRoleID  int64                   `json:"currentUserRoleID,omitempty"`
 	CurrentUserRoleIds []int32                 `json:"currentUserRoleIds"`
-	CVEAllowlist       *models.CVEAllowlist    `json:"CVEAllowlist,omitempty"`
 	Deleted            *bool                   `json:"deleted,omitempty"`
 	Metadata           *models.ProjectMetadata `json:"metadata,omitempty"`
 	OwnerID            *int32                  `json:"ownerID,omitempty"`
