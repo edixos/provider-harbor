@@ -177,7 +177,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			ResourceLateInitialized: false,
 			ConnectionDetails:       nil,
 			Diff:                    "",
-		}, nil
+		}, err
 	}
 	if !getProject.IsSuccess() {
 		return managed.ExternalObservation{
