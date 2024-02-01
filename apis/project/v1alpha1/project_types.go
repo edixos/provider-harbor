@@ -17,10 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"reflect"
+
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"reflect"
 )
 
 type ProjectMetadata struct {

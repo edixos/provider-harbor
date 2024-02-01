@@ -67,10 +67,54 @@ spec:
               forProvider:
                 description: ProjectParameters are the configurable fields of a Project.
                 properties:
-                  configurableField:
+                  currentUserRoleID:
+                    format: int64
+                    type: integer
+                  currentUserRoleIds:
+                    items:
+                      format: int32
+                      type: integer
+                    type: array
+                  deleted:
+                    type: boolean
+                  metadata:
+                    properties:
+                      autoScan:
+                        type: string
+                      enableContentTrust:
+                        type: string
+                      enableContentTrustCosign:
+                        type: string
+                      preventVul:
+                        type: string
+                      public:
+                        type: string
+                      retentionID:
+                        type: string
+                      reuseSysCVEAllowlist:
+                        type: string
+                      severity:
+                        type: string
+                    type: object
+                  ownerID:
+                    format: int32
+                    type: integer
+                  ownerName:
                     type: string
+                  projectID:
+                    format: int32
+                    type: integer
+                  registryID:
+                    format: int64
+                    type: integer
+                  repoCount:
+                    format: int64
+                    type: integer
+                  togglable:
+                    type: boolean
                 required:
-                - configurableField
+                - currentUserRoleIds
+                - repoCount
                 type: object
               managementPolicies:
                 default:
@@ -275,7 +319,7 @@ spec:
               atProvider:
                 description: ProjectObservation are the observable fields of a Project.
                 properties:
-                  observableField:
+                  state:
                     type: string
                 type: object
               conditions:
