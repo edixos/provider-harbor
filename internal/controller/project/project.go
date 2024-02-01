@@ -63,12 +63,9 @@ var (
 		splitCreds := strings.Split(stringCreds, ":")
 		username := splitCreds[0]
 		password := splitCreds[1]
-		if insecure == nil || *insecure == false {
-			fmt.Println(insecure)
-		}
 		clientSetConfig := &harbor.ClientSetConfig{
 			URL:      harborUrl,
-			Insecure: false,
+			Insecure: *insecure,
 			Username: username,
 			Password: password,
 		}
