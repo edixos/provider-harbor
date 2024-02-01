@@ -21,12 +21,11 @@ import (
 	"fmt"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/goharbor/go-client/pkg/harbor"
-	"strings"
-
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 
 	"github.com/crossplane/crossplane-runtime/pkg/connection"
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
