@@ -46,11 +46,11 @@ const (
 	errNewClient = "cannot create new Service"
 )
 
-// A NoOpService does nothing.
-type NoOpService struct{}
+// A HarborService does nothing.
+type HarborService struct{}
 
 var (
-	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
+	newNoOpService = func(_ []byte) (interface{}, error) { return &HarborService{}, nil }
 )
 
 // Setup adds a controller that reconciles {{ .Env.KIND }} managed resources.

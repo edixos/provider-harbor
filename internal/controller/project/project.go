@@ -19,6 +19,9 @@ package project
 import (
 	"context"
 	"fmt"
+	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/goharbor/go-client/pkg/harbor"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,6 +38,9 @@ import (
 	"github.com/crossplane/provider-harbor/apis/project/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-harbor/apis/v1alpha1"
 	"github.com/crossplane/provider-harbor/internal/features"
+	v2client "github.com/goharbor/go-client/pkg/sdk/v2.0/client"
+	modelProject "github.com/goharbor/go-client/pkg/sdk/v2.0/client/project"
+	"github.com/goharbor/go-client/pkg/sdk/v2.0/models"
 )
 
 const (
@@ -46,11 +52,34 @@ const (
 	errNewClient = "cannot create new Service"
 )
 
-// A NoOpService does nothing.
-type NoOpService struct{}
+// A HarborService does nothing.
+type HarborService struct {
+	harborClientSet *v2client.HarborAPI
+}
 
 var (
-	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
+	newHarborClientSetService = func(creds []byte, harborUrl string, insecure *bool) (*HarborService, error) {
+		stringCreds := string(creds)
+		splitCreds := strings.Split(stringCreds, ":")
+		username := splitCreds[0]
+		password := splitCreds[1]
+		if insecure == nil || *insecure == false {
+			fmt.Println(insecure)
+		}
+		clientSetConfig := &harbor.ClientSetConfig{
+			URL:      harborUrl,
+			Insecure: false,
+			Username: username,
+			Password: password,
+		}
+		clientSet, err := harbor.NewClientSet(clientSetConfig)
+		if err != nil {
+			return nil, err
+		}
+		clv2 := clientSet.V2()
+		harbourService := HarborService{harborClientSet: clv2}
+		return &harbourService, nil
+	}
 )
 
 // Setup adds a controller that reconciles Project managed resources.
@@ -67,7 +96,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: newNoOpService}),
+			newServiceFn: newHarborClientSetService}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
@@ -86,7 +115,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        resource.Tracker
-	newServiceFn func(creds []byte) (interface{}, error)
+	newServiceFn func(creds []byte, harborUrl string, insecure *bool) (*HarborService, error)
 }
 
 // Connect typically produces an ExternalClient by:
@@ -115,7 +144,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errGetCreds)
 	}
 
-	svc, err := c.newServiceFn(data)
+	svc, err := c.newServiceFn(data, pc.Spec.HarborUrl, pc.Spec.Insecure)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
@@ -128,7 +157,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 type external struct {
 	// A 'client' used to connect to the external resource API. In practice this
 	// would be something like an AWS SDK client.
-	service interface{}
+	service *HarborService
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
@@ -139,7 +168,29 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// These fmt statements should be removed in the real implementation.
 	fmt.Printf("Observing: %+v", cr)
-
+	projectParams := &modelProject.GetProjectParams{
+		ProjectNameOrID: meta.GetExternalName(cr),
+		Context:         context.TODO(),
+	}
+	getProject, err := c.service.harborClientSet.Project.GetProject(ctx, projectParams)
+	if err != nil {
+		return managed.ExternalObservation{
+			ResourceExists:          false,
+			ResourceUpToDate:        false,
+			ResourceLateInitialized: false,
+			ConnectionDetails:       nil,
+			Diff:                    "",
+		}, nil
+	}
+	if !getProject.IsSuccess() {
+		return managed.ExternalObservation{
+			ResourceExists:          false,
+			ResourceUpToDate:        false,
+			ResourceLateInitialized: false,
+			ConnectionDetails:       nil,
+			Diff:                    "",
+		}, nil
+	}
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
 		// the managed resource reconciler know that it needs to call Create to
@@ -162,9 +213,28 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotProject)
 	}
-
+	metadata := cr.Spec.ForProvider.Metadata
 	fmt.Printf("Creating: %+v", cr)
-
+	createProject := &modelProject.CreateProjectParams{
+		Project: &models.ProjectReq{
+			ProjectName: meta.GetExternalName(cr),
+			Metadata: &models.ProjectMetadata{
+				AutoScan:                 metadata.AutoScan,
+				EnableContentTrust:       metadata.EnableContentTrust,
+				EnableContentTrustCosign: metadata.EnableContentTrustCosign,
+				PreventVul:               metadata.PreventVul,
+				Public:                   metadata.Public,
+				RetentionID:              metadata.RetentionID,
+				ReuseSysCVEAllowlist:     metadata.ReuseSysCVEAllowlist,
+				Severity:                 metadata.Severity,
+			},
+		},
+	}
+	projectCreateOutPut, err := c.service.harborClientSet.Project.CreateProject(ctx, createProject)
+	if !projectCreateOutPut.IsSuccess() || err != nil {
+		return managed.ExternalCreation{}, err
+	}
+	cr.Status.AtProvider.State = projectCreateOutPut.String()
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.
