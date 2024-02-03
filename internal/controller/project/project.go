@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/goharbor/go-client/pkg/harbor"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,9 +37,8 @@ import (
 	"github.com/crossplane/provider-harbor/apis/project/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-harbor/apis/v1alpha1"
 	"github.com/crossplane/provider-harbor/internal/features"
-	v2client "github.com/goharbor/go-client/pkg/sdk/v2.0/client"
-	modelProject "github.com/goharbor/go-client/pkg/sdk/v2.0/client/project"
-	"github.com/goharbor/go-client/pkg/sdk/v2.0/models"
+	"github.com/mittwald/goharbor-client/v5/apiv2"
+	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
 )
 
 const (
@@ -52,9 +50,9 @@ const (
 	errNewClient = "cannot create new Service"
 )
 
-// A HarborService does nothing.
+// A HarborService is the defaultClient Service
 type HarborService struct {
-	harborClientSet *v2client.HarborAPI
+	harborClientSet *apiv2.RESTClient
 }
 
 var (
@@ -63,18 +61,11 @@ var (
 		splitCreds := strings.Split(stringCreds, ":")
 		username := splitCreds[0]
 		password := splitCreds[1]
-		clientSetConfig := &harbor.ClientSetConfig{
-			URL:      harborUrl,
-			Insecure: *insecure,
-			Username: username,
-			Password: password,
-		}
-		clientSet, err := harbor.NewClientSet(clientSetConfig)
+		client, err := apiv2.NewRESTClientForHost(harborUrl, username, password, nil)
 		if err != nil {
 			return nil, err
 		}
-		clv2 := clientSet.V2()
-		harbourService := HarborService{harborClientSet: clv2}
+		harbourService := HarborService{harborClientSet: client}
 		return &harbourService, nil
 	}
 )
@@ -165,11 +156,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// These fmt statements should be removed in the real implementation.
 	fmt.Printf("Observing: %+v", cr)
-	projectParams := &modelProject.GetProjectParams{
-		ProjectNameOrID: meta.GetExternalName(cr),
-		Context:         context.TODO(),
-	}
-	getProject, err := c.service.harborClientSet.Project.GetProject(ctx, projectParams)
+	getProject, err := c.service.harborClientSet.ProjectExists(ctx, meta.GetExternalName(cr))
 	if err != nil {
 		return managed.ExternalObservation{
 			ResourceExists:          false,
@@ -179,25 +166,33 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			Diff:                    "",
 		}, err
 	}
-	if !getProject.IsSuccess() {
+	if getProject {
 		return managed.ExternalObservation{
-			ResourceExists:          false,
-			ResourceUpToDate:        false,
-			ResourceLateInitialized: false,
-			ConnectionDetails:       nil,
-			Diff:                    "",
+			// Return false when the external resource does not exist. This lets
+			// the managed resource reconciler know that it needs to call Create to
+			// (re)create the resource, or that it has successfully been deleted.
+			ResourceExists: true,
+
+			// Return false when the external resource exists, but it not up to date
+			// with the desired managed resource state. This lets the managed
+			// resource reconciler know that it needs to call Update.
+			ResourceUpToDate: true,
+
+			// Return any details that may be required to connect to the external
+			// resource. These will be stored as the connection secret.
+			ConnectionDetails: managed.ConnectionDetails{},
 		}, nil
 	}
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
 		// the managed resource reconciler know that it needs to call Create to
 		// (re)create the resource, or that it has successfully been deleted.
-		ResourceExists: true,
+		ResourceExists: false,
 
 		// Return false when the external resource exists, but it not up to date
 		// with the desired managed resource state. This lets the managed
 		// resource reconciler know that it needs to call Update.
-		ResourceUpToDate: true,
+		ResourceUpToDate: false,
 
 		// Return any details that may be required to connect to the external
 		// resource. These will be stored as the connection secret.
@@ -210,28 +205,15 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotProject)
 	}
-	metadata := cr.Spec.ForProvider.Metadata
 	fmt.Printf("Creating: %+v", cr)
-	createProject := &modelProject.CreateProjectParams{
-		Project: &models.ProjectReq{
-			ProjectName: meta.GetExternalName(cr),
-			Metadata: &models.ProjectMetadata{
-				AutoScan:                 metadata.AutoScan,
-				EnableContentTrust:       metadata.EnableContentTrust,
-				EnableContentTrustCosign: metadata.EnableContentTrustCosign,
-				PreventVul:               metadata.PreventVul,
-				Public:                   metadata.Public,
-				RetentionID:              metadata.RetentionID,
-				ReuseSysCVEAllowlist:     metadata.ReuseSysCVEAllowlist,
-				Severity:                 metadata.Severity,
-			},
-		},
-	}
-	projectCreateOutPut, err := c.service.harborClientSet.Project.CreateProject(ctx, createProject)
-	if !projectCreateOutPut.IsSuccess() || err != nil {
+	err := c.service.harborClientSet.NewProject(ctx, &modelv2.ProjectReq{
+		ProjectName: meta.GetExternalName(cr),
+		Metadata:    &modelv2.ProjectMetadata{Public: "true"},
+	})
+	if err != nil {
 		return managed.ExternalCreation{}, err
 	}
-	cr.Status.AtProvider.State = projectCreateOutPut.String()
+	cr.Status.AtProvider.State = "Ready"
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.

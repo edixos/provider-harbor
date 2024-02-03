@@ -1,9 +1,17 @@
-apiVersion: sample.harbor.crossplane.io/v1alpha1
-kind: MyType
+apiVersion: project.harbor.crossplane.io
+kind: Project
 metadata:
   name: example
 spec:
   forProvider:
-    configurableField: test
+    ownerID: [1,2,3,4]
+    repoCount: 5
+    metadata:
+      autoScan: "false"
+      enableContentTrust: "false"
+      enableContentTrustCosign: "false"
+      preventVul: "false"
+      public: Public
+      retentionID: 1
   providerConfigRef:
     name: example
