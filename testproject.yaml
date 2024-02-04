@@ -1,0 +1,18 @@
+apiVersion: project.harbor.crossplane.io/v1alpha1
+kind: Project
+metadata:
+  name: test1
+spec:
+  forProvider:
+    ownerID: 1
+    currentUserRoleIds: [1,2]
+    repoCount: 5
+    metadata:
+      autoScan: "false"
+      enableContentTrust: "false"
+      enableContentTrustCosign: "false"
+      preventVul: "false"
+      public: Public
+      retentionID: "retain"
+  providerConfigRef:
+    name: example

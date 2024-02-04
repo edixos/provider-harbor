@@ -34,6 +34,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/provider-harbor/apis/project/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-harbor/apis/v1alpha1"
 	"github.com/crossplane/provider-harbor/internal/features"
@@ -61,6 +62,14 @@ var (
 		splitCreds := strings.Split(stringCreds, ":")
 		username := splitCreds[0]
 		password := splitCreds[1]
+		password = strings.Trim(password, "\n")
+
+		fmt.Printf("username:%s\n", username)
+		fmt.Printf("password:%s\n", password)
+		fmt.Printf("harborUrl:%s\n", harborUrl)
+		fmt.Printf("URLS ---> %s:%s:%s\n", password, username, harborUrl)
+		fmt.Printf("lenggth of them %d,%d,%d", len(username), len(password), len(harborUrl))
+
 		client, err := apiv2.NewRESTClientForHost(harborUrl, username, password, nil)
 		if err != nil {
 			return nil, err
@@ -136,7 +145,6 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
-
 	return &external{service: svc}, nil
 }
 
@@ -167,6 +175,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, err
 	}
 	if getProject {
+		cr.Status.SetConditions(xpv1.Available())
 		return managed.ExternalObservation{
 			// Return false when the external resource does not exist. This lets
 			// the managed resource reconciler know that it needs to call Create to
@@ -213,7 +222,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if err != nil {
 		return managed.ExternalCreation{}, err
 	}
-	cr.Status.AtProvider.State = "Ready"
+	cr.Status.SetConditions(xpv1.Creating())
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.
@@ -240,6 +249,17 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 	cr, ok := mg.(*v1alpha1.Project)
 	if !ok {
 		return errors.New(errNotProject)
+	}
+	project, ok := mg.(*v1alpha1.Project)
+
+	if !ok {
+		return errors.Wrap(nil, "Delete Database failed!")
+	}
+	err := c.service.harborClientSet.DeleteProject(ctx, project.GetName())
+
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
 
 	fmt.Printf("Deleting: %+v", cr)
