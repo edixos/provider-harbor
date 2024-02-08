@@ -7,13 +7,13 @@ import (
 
 func CastToLocalType(project_metadata *modelv2.ProjectMetadata) v1alpha1.ProjectMetadata {
 	projectv2 := v1alpha1.ProjectMetadata{}
-	*projectv2.AutoScan = *project_metadata.AutoScan
-	*projectv2.EnableContentTrust = *project_metadata.EnableContentTrust
-	*projectv2.EnableContentTrustCosign = *project_metadata.EnableContentTrustCosign
-	*projectv2.PreventVul = *project_metadata.PreventVul
+	projectv2.AutoScan = project_metadata.AutoScan
+	projectv2.EnableContentTrust = project_metadata.EnableContentTrust
+	projectv2.EnableContentTrustCosign = project_metadata.EnableContentTrustCosign
+	projectv2.PreventVul = project_metadata.PreventVul
 	projectv2.Public = project_metadata.Public
-	*projectv2.RetentionID = *project_metadata.RetentionID
-	*projectv2.ReuseSysCVEAllowlist = *project_metadata.ReuseSysCVEAllowlist
-	*projectv2.Severity = *project_metadata.Severity
+	projectv2.RetentionID = project_metadata.RetentionID
+	projectv2.ReuseSysCVEAllowlist = project_metadata.ReuseSysCVEAllowlist
+	projectv2.Severity = project_metadata.Severity
 	return projectv2
 }
