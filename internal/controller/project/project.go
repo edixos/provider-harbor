@@ -182,11 +182,11 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	alphaGetFromServer := utility.CastToLocalType(getFromServer.Metadata)
 	fmt.Println("----")
 	fmt.Println("-----")
-	fmt.Printf("Creating: %+v", alphaGetFromServer)
-	fmt.Printf("mtaching with : %+v", *getFromServer.Metadata)
+	fmt.Printf("Creating: %s", *alphaGetFromServer.AutoScan)
+	fmt.Printf("mtaching with : %s", *getFromServer.Metadata.AutoScan)
 	fmt.Printf("mtaching with : %+v", *cr.Spec.ForProvider.Metadata)
 
-	if !cmp.Equal(*cr.Spec.ForProvider.Metadata.DeepCopy(), alphaGetFromServer) {
+	if !cmp.Equal(*cr.Spec.ForProvider.Metadata, alphaGetFromServer) {
 		fmt.Println("found Drift from source Config")
 		fmt.Println(cmp.Diff(cr.Spec.ForProvider.Metadata.DeepCopy(), getFromServer.Metadata))
 	}
