@@ -45,7 +45,7 @@ type ProjectParameters struct {
 	OwnerName          *string          `json:"ownerName,omitempty"`
 	ProjectID          *int32           `json:"projectID,omitempty"`
 	RegistryID         *int64           `json:"registryID,omitempty"`
-	RepoCount          int64            `json:"repoCount"`
+	RepoCount          *int64           `json:"repoCount,omitempty"`
 	Togglable          *bool            `json:"togglable,omitempty"`
 }
 

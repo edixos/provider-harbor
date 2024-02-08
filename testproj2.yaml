@@ -12,7 +12,8 @@ spec:
       enableContentTrust: "false"
       enableContentTrustCosign: "false"
       preventVul: "false"
-      public: Public
-      retentionID: "retain"
+      public: "true"
+      severity: "low"
+      reuseSysCVEAllowlist: "true"
   providerConfigRef:
     name: example

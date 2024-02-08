@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,6 +39,7 @@ import (
 	"github.com/crossplane/provider-harbor/apis/project/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-harbor/apis/v1alpha1"
 	"github.com/crossplane/provider-harbor/internal/features"
+	"github.com/crossplane/provider-harbor/utility"
 	"github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
 )
@@ -63,12 +65,6 @@ var (
 		username := splitCreds[0]
 		password := splitCreds[1]
 		password = strings.Trim(password, "\n")
-
-		fmt.Printf("username:%s\n", username)
-		fmt.Printf("password:%s\n", password)
-		fmt.Printf("harborUrl:%s\n", harborUrl)
-		fmt.Printf("URLS ---> %s:%s:%s\n", password, username, harborUrl)
-		fmt.Printf("lenggth of them %d,%d,%d", len(username), len(password), len(harborUrl))
 
 		client, err := apiv2.NewRESTClientForHost(harborUrl, username, password, nil)
 		if err != nil {
@@ -163,7 +159,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	// fmt.Printf("Observing: %+v", cr)
 	getProject, err := c.service.harborClientSet.ProjectExists(ctx, meta.GetExternalName(cr))
 	if err != nil {
 		return managed.ExternalObservation{
@@ -174,6 +170,27 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			Diff:                    "",
 		}, err
 	}
+
+	fmt.Printf("the diff\n\n")
+	if err != nil {
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, err
+	}
+	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
+
+	alphaGetFromServer := utility.CastToLocalType(getFromServer.Metadata)
+	fmt.Println("----")
+	fmt.Println("-----")
+	fmt.Printf("Creating: %+v", alphaGetFromServer)
+	fmt.Printf("mtaching with : %+v", *getFromServer.Metadata)
+	fmt.Printf("mtaching with : %+v", *cr.Spec.ForProvider.Metadata.DeepCopy())
+
+	if !cmp.Equal(*cr.Spec.ForProvider.Metadata.DeepCopy(), alphaGetFromServer) {
+		fmt.Println("found Drift from source Config")
+		fmt.Println(cmp.Diff(cr.Spec.ForProvider.Metadata.DeepCopy(), getFromServer.Metadata))
+	}
+
 	if getProject {
 		cr.Status.SetConditions(xpv1.Available())
 		return managed.ExternalObservation{

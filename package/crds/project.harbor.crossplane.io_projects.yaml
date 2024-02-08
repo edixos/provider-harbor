@@ -114,7 +114,6 @@ spec:
                     type: boolean
                 required:
                 - currentUserRoleIds
-                - repoCount
                 type: object
               managementPolicies:
                 default:

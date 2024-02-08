@@ -187,6 +187,11 @@ func (in *ProjectParameters) DeepCopyInto(out *ProjectParameters) {
 		*out = new(int64)
 		**out = **in
 	}
+	if in.RepoCount != nil {
+		in, out := &in.RepoCount, &out.RepoCount
+		*out = new(int64)
+		**out = **in
+	}
 	if in.Togglable != nil {
 		in, out := &in.Togglable, &out.Togglable
 		*out = new(bool)
