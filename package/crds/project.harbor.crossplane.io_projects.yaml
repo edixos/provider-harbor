@@ -114,6 +114,7 @@ spec:
                     type: boolean
                 required:
                 - currentUserRoleIds
+                - metadata
                 type: object
               managementPolicies:
                 default:

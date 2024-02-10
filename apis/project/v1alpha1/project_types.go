@@ -37,16 +37,16 @@ type ProjectMetadata struct {
 
 // ProjectParameters are the configurable fields of a Project.
 type ProjectParameters struct {
-	CurrentUserRoleID  int64            `json:"currentUserRoleID,omitempty"`
-	CurrentUserRoleIds []int32          `json:"currentUserRoleIds"`
-	Deleted            *bool            `json:"deleted,omitempty"`
-	Metadata           *ProjectMetadata `json:"metadata,omitempty"`
-	OwnerID            *int32           `json:"ownerID,omitempty"`
-	OwnerName          *string          `json:"ownerName,omitempty"`
-	ProjectID          *int32           `json:"projectID,omitempty"`
-	RegistryID         *int64           `json:"registryID,omitempty"`
-	RepoCount          *int64           `json:"repoCount,omitempty"`
-	Togglable          *bool            `json:"togglable,omitempty"`
+	CurrentUserRoleID  int64           `json:"currentUserRoleID,omitempty"`
+	CurrentUserRoleIds []int32         `json:"currentUserRoleIds"`
+	Deleted            *bool           `json:"deleted,omitempty"`
+	Metadata           ProjectMetadata `json:"metadata"`
+	OwnerID            *int32          `json:"ownerID,omitempty"`
+	OwnerName          *string         `json:"ownerName,omitempty"`
+	ProjectID          *int32          `json:"projectID,omitempty"`
+	RegistryID         *int64          `json:"registryID,omitempty"`
+	RepoCount          *int64          `json:"repoCount,omitempty"`
+	Togglable          *bool           `json:"togglable,omitempty"`
 }
 
 // ProjectObservation are the observable fields of a Project.

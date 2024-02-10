@@ -162,11 +162,7 @@ func (in *ProjectParameters) DeepCopyInto(out *ProjectParameters) {
 		*out = new(bool)
 		**out = **in
 	}
-	if in.Metadata != nil {
-		in, out := &in.Metadata, &out.Metadata
-		*out = new(ProjectMetadata)
-		(*in).DeepCopyInto(*out)
-	}
+	in.Metadata.DeepCopyInto(&out.Metadata)
 	if in.OwnerID != nil {
 		in, out := &in.OwnerID, &out.OwnerID
 		*out = new(int32)

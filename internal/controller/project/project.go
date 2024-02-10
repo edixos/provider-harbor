@@ -171,7 +171,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, err
 	}
 
-	fmt.Printf("the diff\n\n")
+	// fmt.Printf("the diff\n\n")
 	if err != nil {
 		return managed.ExternalObservation{
 			ResourceExists: false,
@@ -180,15 +180,32 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
 
 	alphaGetFromServer := utility.CastToLocalType(getFromServer.Metadata)
-	fmt.Println("----")
-	fmt.Println("-----")
-	fmt.Printf("Creating: %s", *alphaGetFromServer.AutoScan)
-	fmt.Printf("mtaching with : %s", *getFromServer.Metadata.AutoScan)
-	fmt.Printf("mtaching with : %+v", *cr.Spec.ForProvider.Metadata)
+	// fmt.Println("----")
+	// fmt.Println("-----")
+	// fmt.Printf("Creating: %s\n", *alphaGetFromServer.AutoScan)
+	// fmt.Printf("mtaching with : %s\n", *getFromServer.Metadata.AutoScan)
+	// fmt.Printf("mtaching with : %+v\n", cr.Spec.ForProvider.Metadata)
+	// fmt.Printf("mtaching with : %s\n", cmp.Diff(cr.Spec.ForProvider.Metadata, alphaGetFromServer))
 
-	if !cmp.Equal(*cr.Spec.ForProvider.Metadata, alphaGetFromServer) {
-		fmt.Println("found Drift from source Config")
-		fmt.Println(cmp.Diff(cr.Spec.ForProvider.Metadata.DeepCopy(), getFromServer.Metadata))
+	if !cmp.Equal(cr.Spec.ForProvider.Metadata, alphaGetFromServer) {
+		updatedMeta := utility.GetDiff(cr.Spec.ForProvider.Metadata, alphaGetFromServer)
+		fmt.Println(updatedMeta)
+		return managed.ExternalObservation{
+			// Return false when the external resource does not exist. This lets
+			// the managed resource reconciler know that it needs to call Create to
+			// (re)create the resource, or that it has successfully been deleted.
+			ResourceExists: true,
+
+			// Return false when the external resource exists, but it not up to date
+			// with the desired managed resource state. This lets the managed
+			// resource reconciler know that it needs to call Update.
+			ResourceUpToDate: false,
+
+			// Return any details that may be required to connect to the external
+			// resource. These will be stored as the connection secret.
+			ConnectionDetails: managed.ConnectionDetails{},
+			Diff:              cmp.Diff(cr.Spec.ForProvider.Metadata, alphaGetFromServer),
+		}, nil
 	}
 
 	if getProject {
@@ -231,7 +248,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotProject)
 	}
-	fmt.Printf("Creating: %+v", cr)
+	// fmt.Printf("Creating: %+v", cr)
 	err := c.service.harborClientSet.NewProject(ctx, &modelv2.ProjectReq{
 		ProjectName: meta.GetExternalName(cr),
 		Metadata:    &modelv2.ProjectMetadata{Public: "true"},
@@ -252,9 +269,22 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotProject)
 	}
+	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
 
-	fmt.Printf("Updating: %+v", cr)
+	alphaGetFromServer := utility.CastToLocalType(getFromServer.Metadata)
+	updatedMeta := utility.GetDiff(cr.Spec.ForProvider.Metadata, alphaGetFromServer)
+	getFromServer.Metadata = &updatedMeta
 
+	// fmt.Printf("Updating: %+v", cr)
+	// projectMeta := &modelv2.ProjectMetadata{}
+	err := c.service.harborClientSet.UpdateProject(ctx, getFromServer, nil)
+	if err == nil {
+		fmt.Println(err)
+		return managed.ExternalUpdate{
+			ConnectionDetails: managed.ConnectionDetails{},
+		}, err
+
+	}
 	return managed.ExternalUpdate{
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.
