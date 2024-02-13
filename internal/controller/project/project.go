@@ -248,10 +248,20 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotProject)
 	}
-	// fmt.Printf("Creating: %+v", cr)
+
+	projMeta := &modelv2.ProjectMetadata{
+		AutoScan:                 cr.Spec.ForProvider.Metadata.AutoScan,
+		EnableContentTrust:       cr.Spec.ForProvider.Metadata.EnableContentTrust,
+		EnableContentTrustCosign: cr.Spec.ForProvider.Metadata.EnableContentTrustCosign,
+		PreventVul:               cr.Spec.ForProvider.Metadata.PreventVul,
+		Public:                   cr.Spec.ForProvider.Metadata.Public,
+		RetentionID:              cr.Spec.ForProvider.Metadata.RetentionID,
+		ReuseSysCVEAllowlist:     cr.Spec.ForProvider.Metadata.ReuseSysCVEAllowlist,
+		Severity:                 cr.Spec.ForProvider.Metadata.Severity,
+	}
 	err := c.service.harborClientSet.NewProject(ctx, &modelv2.ProjectReq{
 		ProjectName: meta.GetExternalName(cr),
-		Metadata:    &modelv2.ProjectMetadata{Public: "true"},
+		Metadata:    projMeta,
 	})
 	if err != nil {
 		return managed.ExternalCreation{}, err
@@ -297,19 +307,14 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 	if !ok {
 		return errors.New(errNotProject)
 	}
-	project, ok := mg.(*v1alpha1.Project)
 
 	if !ok {
 		return errors.Wrap(nil, "Delete Database failed!")
 	}
-	err := c.service.harborClientSet.DeleteProject(ctx, project.GetName())
+	err := c.service.harborClientSet.DeleteProject(ctx, cr.GetName())
 
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-
-	fmt.Printf("Deleting: %+v", cr)
-
 	return nil
 }
