@@ -278,7 +278,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	// fmt.Printf("Updating: %+v", cr)
 	// projectMeta := &modelv2.ProjectMetadata{}
 	err := c.service.harborClientSet.UpdateProject(ctx, getFromServer, nil)
-	if err == nil {
+	if err != nil {
 		fmt.Println(err)
 		return managed.ExternalUpdate{
 			ConnectionDetails: managed.ConnectionDetails{},
