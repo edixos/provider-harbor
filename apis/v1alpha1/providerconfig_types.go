@@ -29,6 +29,7 @@ import (
 type ProviderConfigSpec struct {
 	// Credentials required to authenticate to this provider.
 	Credentials ProviderCredentials `json:"credentials"`
+	HarborUrl   string              `json:"harborUrl"`
 }
 
 // ProviderCredentials required to authenticate.

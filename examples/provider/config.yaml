@@ -5,13 +5,14 @@ metadata:
   name: example-provider-secret
 type: Opaque
 data:
-  # credentials: BASE64ENCODED_PROVIDER_CREDS
+  credentials: YWRtaW46Z29kY3JhY2tlcjEyMwo=
 ---
 apiVersion: harbor.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   name: example
 spec:
+  harborUrl: "http://localhost:8090/api"
   credentials:
     source: Secret
     secretRef:
