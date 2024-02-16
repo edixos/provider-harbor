@@ -97,12 +97,9 @@ spec:
                 type: object
               harborUrl:
                 type: string
-              insecure:
-                type: boolean
             required:
             - credentials
             - harborUrl
-            - insecure
             type: object
           status:
             description: A ProviderConfigStatus reflects the observed state of a ProviderConfig.

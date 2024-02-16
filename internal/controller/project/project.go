@@ -59,7 +59,7 @@ type HarborService struct {
 }
 
 var (
-	newHarborClientSetService = func(creds []byte, harborUrl string, insecure *bool) (*HarborService, error) {
+	newHarborClientSetService = func(creds []byte, harborUrl string) (*HarborService, error) {
 		stringCreds := string(creds)
 		splitCreds := strings.Split(stringCreds, ":")
 		username := splitCreds[0]
@@ -108,7 +108,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        resource.Tracker
-	newServiceFn func(creds []byte, harborUrl string, insecure *bool) (*HarborService, error)
+	newServiceFn func(creds []byte, harborUrl string) (*HarborService, error)
 }
 
 // Connect typically produces an ExternalClient by:
@@ -118,6 +118,7 @@ type connector struct {
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
 	cr, ok := mg.(*v1alpha1.Project)
+	fmt.Println("panic")
 	if !ok {
 		return nil, errors.New(errNotProject)
 	}
@@ -125,22 +126,24 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	if err := c.usage.Track(ctx, mg); err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
-
+	fmt.Println("panic-before providercnfig")
 	pc := &apisv1alpha1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
 
 	cd := pc.Spec.Credentials
+	fmt.Println("panic-credsmake run")
 	data, err := resource.CommonCredentialExtractor(ctx, cd.Source, c.kube, cd.CommonCredentialSelectors)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetCreds)
 	}
-
-	svc, err := c.newServiceFn(data, pc.Spec.HarborUrl, pc.Spec.Insecure)
+	fmt.Println("panic-before svc")
+	svc, err := c.newServiceFn(data, pc.Spec.HarborUrl)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
+	fmt.Println("panic-before return")
 	return &external{service: svc}, nil
 }
 
@@ -153,7 +156,9 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
+	fmt.Println("inside te observe method")
 	cr, ok := mg.(*v1alpha1.Project)
+	fmt.Println("conversion failed to panic")
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotProject)
 	}
@@ -161,84 +166,36 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// These fmt statements should be removed in the real implementation.
 	// fmt.Printf("Observing: %+v", cr)
 	getProject, err := c.service.harborClientSet.ProjectExists(ctx, meta.GetExternalName(cr))
+	fmt.Println(getProject)
+	fmt.Println("before get service")
 	if err != nil {
-		return managed.ExternalObservation{
-			ResourceExists:          false,
-			ResourceUpToDate:        false,
-			ResourceLateInitialized: false,
-			ConnectionDetails:       nil,
-			Diff:                    "",
-		}, err
+		return managed.ExternalObservation{}, err
 	}
 
-	// fmt.Printf("the diff\n\n")
-	if err != nil {
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, err
+	if !getProject {
+		fmt.Println("going to Create project")
+		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
-	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
+
+	getFromServer, err := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
+
+	if err != nil {
+		return managed.ExternalObservation{}, err
+	}
 
 	alphaGetFromServer := utility.CastToLocalType(getFromServer.Metadata)
-	// fmt.Println("----")
-	// fmt.Println("-----")
-	// fmt.Printf("Creating: %s\n", *alphaGetFromServer.AutoScan)
-	// fmt.Printf("mtaching with : %s\n", *getFromServer.Metadata.AutoScan)
-	// fmt.Printf("mtaching with : %+v\n", cr.Spec.ForProvider.Metadata)
-	// fmt.Printf("mtaching with : %s\n", cmp.Diff(cr.Spec.ForProvider.Metadata, alphaGetFromServer))
-
 	if !cmp.Equal(cr.Spec.ForProvider.Metadata, alphaGetFromServer) {
-		updatedMeta := utility.GetDiff(cr.Spec.ForProvider.Metadata, alphaGetFromServer)
-		fmt.Println(updatedMeta)
 		return managed.ExternalObservation{
-			// Return false when the external resource does not exist. This lets
-			// the managed resource reconciler know that it needs to call Create to
-			// (re)create the resource, or that it has successfully been deleted.
-			ResourceExists: true,
-
-			// Return false when the external resource exists, but it not up to date
-			// with the desired managed resource state. This lets the managed
-			// resource reconciler know that it needs to call Update.
-			ResourceUpToDate: false,
-
-			// Return any details that may be required to connect to the external
-			// resource. These will be stored as the connection secret.
+			ResourceExists:    true,
+			ResourceUpToDate:  false,
 			ConnectionDetails: managed.ConnectionDetails{},
 			Diff:              cmp.Diff(cr.Spec.ForProvider.Metadata, alphaGetFromServer),
 		}, nil
 	}
 
-	if getProject {
-		cr.Status.SetConditions(xpv1.Available())
-		return managed.ExternalObservation{
-			// Return false when the external resource does not exist. This lets
-			// the managed resource reconciler know that it needs to call Create to
-			// (re)create the resource, or that it has successfully been deleted.
-			ResourceExists: true,
-
-			// Return false when the external resource exists, but it not up to date
-			// with the desired managed resource state. This lets the managed
-			// resource reconciler know that it needs to call Update.
-			ResourceUpToDate: true,
-
-			// Return any details that may be required to connect to the external
-			// resource. These will be stored as the connection secret.
-			ConnectionDetails: managed.ConnectionDetails{},
-		}, nil
-	}
 	return managed.ExternalObservation{
-		// Return false when the external resource does not exist. This lets
-		// the managed resource reconciler know that it needs to call Create to
-		// (re)create the resource, or that it has successfully been deleted.
-		ResourceExists: false,
-
-		// Return false when the external resource exists, but it not up to date
-		// with the desired managed resource state. This lets the managed
-		// resource reconciler know that it needs to call Update.
-		ResourceUpToDate: false,
-
-		// Return any details that may be required to connect to the external
-		// resource. These will be stored as the connection secret.
+		ResourceExists:    true,
+		ResourceUpToDate:  true,
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -255,7 +212,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		EnableContentTrustCosign: cr.Spec.ForProvider.Metadata.EnableContentTrustCosign,
 		PreventVul:               cr.Spec.ForProvider.Metadata.PreventVul,
 		Public:                   cr.Spec.ForProvider.Metadata.Public,
-		RetentionID:              cr.Spec.ForProvider.Metadata.RetentionID,
 		ReuseSysCVEAllowlist:     cr.Spec.ForProvider.Metadata.ReuseSysCVEAllowlist,
 		Severity:                 cr.Spec.ForProvider.Metadata.Severity,
 	}
@@ -268,8 +224,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 	cr.Status.SetConditions(xpv1.Creating())
 	return managed.ExternalCreation{
-		// Optionally return any details that may be required to connect to the
-		// external resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -279,15 +233,17 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotProject)
 	}
-	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
+	getSource, err := GenerateMetadata(mg)
 
-	alphaGetFromServer := utility.CastToLocalType(getFromServer.Metadata)
-	updatedMeta := utility.GetDiff(cr.Spec.ForProvider.Metadata, alphaGetFromServer)
-	getFromServer.Metadata = &updatedMeta
+	if err != nil {
+		return managed.ExternalUpdate{}, err
+	}
+	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
+	*getFromServer.Metadata = getSource
 
 	// fmt.Printf("Updating: %+v", cr)
 	// projectMeta := &modelv2.ProjectMetadata{}
-	err := c.service.harborClientSet.UpdateProject(ctx, getFromServer, nil)
+	err = c.service.harborClientSet.UpdateProject(ctx, getFromServer, nil)
 	if err != nil {
 		fmt.Println(err)
 		return managed.ExternalUpdate{
@@ -296,8 +252,6 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	}
 	return managed.ExternalUpdate{
-		// Optionally return any details that may be required to connect to the
-		// external resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -317,4 +271,20 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 		return err
 	}
 	return nil
+}
+
+func GenerateMetadata(mg resource.Managed) (modelv2.ProjectMetadata, error) {
+	cr, ok := mg.(*v1alpha1.Project)
+	if !ok {
+		return modelv2.ProjectMetadata{}, errors.Wrap(nil, "Genrtaion Failed!")
+	}
+	return modelv2.ProjectMetadata{
+		AutoScan:                 cr.Spec.ForProvider.Metadata.AutoScan,
+		EnableContentTrust:       cr.Spec.ForProvider.Metadata.EnableContentTrust,
+		EnableContentTrustCosign: cr.Spec.ForProvider.Metadata.EnableContentTrustCosign,
+		PreventVul:               cr.Spec.ForProvider.Metadata.PreventVul,
+		Public:                   cr.Spec.ForProvider.Metadata.Public,
+		ReuseSysCVEAllowlist:     cr.Spec.ForProvider.Metadata.ReuseSysCVEAllowlist,
+		Severity:                 cr.Spec.ForProvider.Metadata.Severity,
+	}, nil
 }

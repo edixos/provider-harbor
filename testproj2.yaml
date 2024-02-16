@@ -4,9 +4,6 @@ metadata:
   name: test2
 spec:
   forProvider:
-    ownerID: 1
-    currentUserRoleIds: [1,2]
-    repoCount: 5
     metadata:
       autoScan: "false"
       enableContentTrust: "false"

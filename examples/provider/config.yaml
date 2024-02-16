@@ -13,7 +13,6 @@ metadata:
   name: example
 spec:
   harborUrl: "http://localhost:8090/api"
-  insecure: true
   credentials:
     source: Secret
     secretRef:

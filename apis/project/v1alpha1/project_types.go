@@ -30,23 +30,13 @@ type ProjectMetadata struct {
 	EnableContentTrustCosign *string `json:"enableContentTrustCosign,omitempty"`
 	PreventVul               *string `json:"preventVul,omitempty"`
 	Public                   string  `json:"public,omitempty"`
-	RetentionID              *string `json:"retentionID,omitempty"`
 	ReuseSysCVEAllowlist     *string `json:"reuseSysCVEAllowlist,omitempty"`
 	Severity                 *string `json:"severity,omitempty"`
 }
 
 // ProjectParameters are the configurable fields of a Project.
 type ProjectParameters struct {
-	CurrentUserRoleID  int64           `json:"currentUserRoleID,omitempty"`
-	CurrentUserRoleIds []int32         `json:"currentUserRoleIds"`
-	Deleted            *bool           `json:"deleted,omitempty"`
-	Metadata           ProjectMetadata `json:"metadata"`
-	OwnerID            *int32          `json:"ownerID,omitempty"`
-	OwnerName          *string         `json:"ownerName,omitempty"`
-	ProjectID          *int32          `json:"projectID,omitempty"`
-	RegistryID         *int64          `json:"registryID,omitempty"`
-	RepoCount          *int64          `json:"repoCount,omitempty"`
-	Togglable          *bool           `json:"togglable,omitempty"`
+	Metadata ProjectMetadata `json:"metadata"`
 }
 
 // ProjectObservation are the observable fields of a Project.

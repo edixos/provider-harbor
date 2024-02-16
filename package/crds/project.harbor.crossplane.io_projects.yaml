@@ -67,16 +67,6 @@ spec:
               forProvider:
                 description: ProjectParameters are the configurable fields of a Project.
                 properties:
-                  currentUserRoleID:
-                    format: int64
-                    type: integer
-                  currentUserRoleIds:
-                    items:
-                      format: int32
-                      type: integer
-                    type: array
-                  deleted:
-                    type: boolean
                   metadata:
                     properties:
                       autoScan:
@@ -89,31 +79,12 @@ spec:
                         type: string
                       public:
                         type: string
-                      retentionID:
-                        type: string
                       reuseSysCVEAllowlist:
                         type: string
                       severity:
                         type: string
                     type: object
-                  ownerID:
-                    format: int32
-                    type: integer
-                  ownerName:
-                    type: string
-                  projectID:
-                    format: int32
-                    type: integer
-                  registryID:
-                    format: int64
-                    type: integer
-                  repoCount:
-                    format: int64
-                    type: integer
-                  togglable:
-                    type: boolean
                 required:
-                - currentUserRoleIds
                 - metadata
                 type: object
               managementPolicies:

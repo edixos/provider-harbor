@@ -30,7 +30,6 @@ type ProviderConfigSpec struct {
 	// Credentials required to authenticate to this provider.
 	Credentials ProviderCredentials `json:"credentials"`
 	HarborUrl   string              `json:"harborUrl"`
-	Insecure    *bool               `json:"insecure"`
 }
 
 // ProviderCredentials required to authenticate.
