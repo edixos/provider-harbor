@@ -18,7 +18,6 @@ package project
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
@@ -118,7 +117,6 @@ type connector struct {
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
 	cr, ok := mg.(*v1alpha1.Project)
-	fmt.Println("panic")
 	if !ok {
 		return nil, errors.New(errNotProject)
 	}
@@ -126,24 +124,20 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	if err := c.usage.Track(ctx, mg); err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
-	fmt.Println("panic-before providercnfig")
 	pc := &apisv1alpha1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
 
 	cd := pc.Spec.Credentials
-	fmt.Println("panic-credsmake run")
 	data, err := resource.CommonCredentialExtractor(ctx, cd.Source, c.kube, cd.CommonCredentialSelectors)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetCreds)
 	}
-	fmt.Println("panic-before svc")
 	svc, err := c.newServiceFn(data, pc.Spec.HarborUrl)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
-	fmt.Println("panic-before return")
 	return &external{service: svc}, nil
 }
 
@@ -156,24 +150,17 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	fmt.Println("inside te observe method")
 	cr, ok := mg.(*v1alpha1.Project)
-	fmt.Println("conversion failed to panic")
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotProject)
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	// fmt.Printf("Observing: %+v", cr)
 	getProject, err := c.service.harborClientSet.ProjectExists(ctx, meta.GetExternalName(cr))
-	fmt.Println(getProject)
-	fmt.Println("before get service")
 	if err != nil {
 		return managed.ExternalObservation{}, err
 	}
 
 	if !getProject {
-		fmt.Println("going to Create project")
 		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
@@ -192,7 +179,13 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			Diff:              cmp.Diff(cr.Spec.ForProvider.Metadata, alphaGetFromServer),
 		}, nil
 	}
-
+	cr.Status.SetConditions(xpv1.Condition{
+		Type:               xpv1.TypeReady,
+		Status:             xpv1.Available().Status,
+		LastTransitionTime: xpv1.Available().LastTransitionTime,
+		Reason:             xpv1.Available().Reason,
+		Message:            xpv1.Available().Message,
+	})
 	return managed.ExternalObservation{
 		ResourceExists:    true,
 		ResourceUpToDate:  true,
@@ -240,12 +233,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 	getFromServer, _ := c.service.harborClientSet.GetProject(ctx, meta.GetExternalName(cr))
 	*getFromServer.Metadata = getSource
-
-	// fmt.Printf("Updating: %+v", cr)
-	// projectMeta := &modelv2.ProjectMetadata{}
 	err = c.service.harborClientSet.UpdateProject(ctx, getFromServer, nil)
 	if err != nil {
-		fmt.Println(err)
 		return managed.ExternalUpdate{
 			ConnectionDetails: managed.ConnectionDetails{},
 		}, err
